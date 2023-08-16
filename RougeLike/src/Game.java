@@ -147,7 +147,11 @@ public class Game {
                     }
                     System.out.print(toPrint);
                 } else {
-                    System.out.print(BLACK_SPACE);
+                    if (col < WIDTH) {
+                        System.out.print(BLACK_SPACE);
+                    } else {
+                        System.out.print(" ");
+                    }
                 }
             }
             //reached the end of the columns
