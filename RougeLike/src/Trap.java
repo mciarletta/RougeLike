@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 public class Trap extends GameObject {
     private final int x;
     private final int y;
@@ -30,5 +32,10 @@ public class Trap extends GameObject {
     @Override
     public void move(int x, int y) {
 
+    }
+
+    @Override
+    public boolean fight(ArrayList<String> messages) {
+    return false;
     }
 }

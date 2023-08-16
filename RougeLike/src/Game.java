@@ -1,13 +1,16 @@
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Scanner;
 
 public class Game {
 
     // constants
-    private static int WIDTH;
+    private static int HEIGHT;
 
-    private static int LENGTH;
+    private static int WIDTH;
+    private static int VP_HEIGHT = 10;
+    private static int VP_WIDTH = 40;
 
     //this displays how much you can see around the hero
     private static int TORCH_RADIUS = 5;
@@ -20,20 +23,26 @@ public class Game {
     private boolean isOver;
     private Random rand = new Random();
 
+    private ArrayList<String> messages = new ArrayList<>();
+
 
     private ArrayList<GameObject> gameObjects = new ArrayList<>();
 
-    public void run() {
+    public void run() throws InterruptedException {
         setUp();
         while (!isOver) {
+            //hero turn
             printWorld();
             moveHero();
-            //eraseWorld();
+            eraseWorld();
             printWorld();
             updateTouches();
+            if (isOver) break;
             checkWinningCondition();
+
+            //enemy turn
             moveEnemies();
-            //eraseWorld();
+            eraseWorld();
             updateTouches();
         }
         printWorld();
@@ -76,8 +85,59 @@ public class Game {
     }
 
     private void printWorld() {
-        for (int row = 0; row < WIDTH; row++) {
-            for (int col = 0; col < WIDTH; col++) {
+        //print VP top bar
+        System.out.println("-".repeat(VP_WIDTH));
+
+        //for the messages
+        Iterator<String> i = messages.iterator();
+
+        //adjust for the view port if the room is bigger than it
+        //get the hero location first
+        int heroX = hero.getX();
+        int heroY = hero.getY();
+        int midY = VP_HEIGHT/2;
+        int midX = VP_WIDTH/2;
+        int yOffSetTop = 0;
+        int xOffsetRight = 0;
+        int yOffSetBottom = 0;
+        int xOffsetLeft = 0;
+
+        //check to see if an offset is needed
+
+        //print the top part and only midY of the bottom
+        if (heroY <= midY){
+            yOffSetTop = 2*midY;
+        } else {
+            //if the hero is closer to the bottom, we still want to print up to midY
+            if (HEIGHT - heroY < midY){
+                yOffSetTop = HEIGHT; //print to the height
+                yOffSetBottom = HEIGHT - 2*midY;
+            } else {
+                //the hero is in the middle somewhere
+                yOffSetTop = heroY + midY;
+                //find the bottom offset
+                yOffSetBottom = heroY - midY;
+            }
+        }
+
+        if (heroX <= midX){
+            xOffsetRight = 2*midX;
+        } else {
+            //if the hero is closer to the right
+            if (WIDTH - heroX < midX){
+                xOffsetRight = WIDTH; //print to the width
+                xOffsetLeft = WIDTH - 2*midX;
+            } else {
+                //the hero is in the middle somewhere
+                xOffsetRight =heroX + midX;
+                //find the bottom offset
+                xOffsetLeft =heroX - midX;
+            }
+        }
+
+
+        for (int row = yOffSetBottom; row < yOffSetTop; row++) {
+            for (int col = xOffsetLeft; col < xOffsetRight; col++) {
                 if (Math.abs(row - hero.getY()) < TORCH_RADIUS && Math.abs(col - hero.getX()) < TORCH_RADIUS) {
                     String toPrint = EMPTY_CHARACTER;
                     for (GameObject obj : gameObjects) {
@@ -90,9 +150,18 @@ public class Game {
                     System.out.print(BLACK_SPACE);
                 }
             }
-            //reached the end of the columns, so print a line break
+            //reached the end of the columns
+            //print messages
+            if (i.hasNext()){
+                System.out.printf("\t %s", i.next());
+                i.remove();
+            }
+            // so print a line break
             System.out.println();
         }
+        //print VP bottom bar
+        System.out.println("-".repeat(VP_WIDTH));
+
     }
 
 
@@ -194,9 +263,9 @@ public class Game {
 
     private void setWorldWidth() {
         System.out.print("What would you like the average room width to be? : ");
-        WIDTH = Integer.parseInt(console.nextLine());
+        HEIGHT = Integer.parseInt(console.nextLine());
         //for now LENGTH = WIDTH, but for the future, it might be useful to have a length
-        LENGTH = WIDTH;
+        WIDTH = HEIGHT;
     }
 
     private String setHeroSymbol() {
@@ -215,8 +284,8 @@ public class Game {
         GameObject gameObj;
 
         do {
-            x = rand.nextInt(WIDTH);
-            y = rand.nextInt(WIDTH);
+            x = rand.nextInt(HEIGHT);
+            y = rand.nextInt(HEIGHT);
 
             //if an object has these coordinates, break out of the loop to make new x and y
             for (GameObject obj : gameObjects) {
@@ -258,18 +327,22 @@ public class Game {
 
 
     public void foundTreasure() {
-        System.out.println(hero.getName() + " found the treasure! Nice.");
+        messages.add(hero.getName() + " found the treasure! Nice.");
+        //System.out.println(hero.getName() + " found the treasure! Nice.");
     }
 
     public void gameOver(String result) {
         switch (result) {
             case "Win":
-                System.out.println("Congratulations! You found all the treasure.");
+                messages.add("Congratulations! You found all the treasure.");
+                //System.out.println("Congratulations! You found all the treasure.");
                 isOver = true;
-                return;
+                break;
             case "Lose":
-                System.out.println("You died! Game over, man.");
+                messages.add("You died! Game over, man.");
+                //System.out.println("You died! Game over, man.");
                 isOver = true;
+                break;
 
         }
     }
@@ -290,12 +363,12 @@ public class Game {
 
     public void makeRoom() {
         //will need walls equal to 4*WIDTH plus 4 corners
-        for (int row = 0; row < WIDTH; row++) {
-            for (int col = 0; col < LENGTH; col++) {
-                if (row == 0 || row == WIDTH - 1) {
+        for (int row = 0; row < HEIGHT; row++) {
+            for (int col = 0; col < WIDTH; col++) {
+                if (row == 0 || row == HEIGHT - 1) {
                     GameObject wall = new Wall(row, col);
                     gameObjects.add(wall);
-                } else if (col == 0 || col == LENGTH - 1) {
+                } else if (col == 0 || col == WIDTH - 1) {
                     GameObject wall = new Wall(row, col);
                     gameObjects.add(wall);
                 }
@@ -318,53 +391,38 @@ public class Game {
         return canMove;
     }
 
-    public void updateTouches() {
-        ArrayList<GameObject> toRemove = new ArrayList<>();
-        for (GameObject obj : gameObjects) {
+    public void updateTouches() throws InterruptedException {
+        Iterator<GameObject> i = gameObjects.iterator();
+        while (i.hasNext()){
+            GameObject obj = i.next();
             if (hero.getX() == obj.getX() && hero.getY() == obj.getY()) {
                 if (obj instanceof Treasure) {
                     foundTreasure();
-                    toRemove.add(obj);
+                    i.remove();
                 }
                 if (obj instanceof Trap) {
+                    messages.add("You fell into a lava trap! What's wrong with you?");
                     gameOver("Lose");
                     return;
                 }
             }
             //check if enemies are touching
-            if (obj instanceof Enemy &&
-                    Math.abs(hero.getX() - obj.getX()) <= 1 &&
-                    Math.abs(hero.getY() - obj.getY()) <= 1) {
+            if (obj instanceof Enemy
+                    &&
+                    (Math.abs(hero.getX() - obj.getX()) <= 1 && hero.getY() == obj.getY())
+                    ||
+                    (Math.abs(hero.getY() - obj.getY()) <= 1) && hero.getX() == obj.getX()) {
                 //begin combat sequence with this enemy
-                if (fight(obj)) toRemove.add(obj);
+                //if (fight(obj)) i.remove();
+                if (obj.fight(messages)) i.remove();
             }
         }
-        //remove objects
-        for (GameObject obj : toRemove) {
-            gameObjects.remove(obj);
-        }
-    }
-
-    public boolean fight(GameObject obj){
-        //for now, I will just make it random with only two outcomes
-        int move = rand.nextInt(2);
-        boolean enemyKilled = false;
-        switch (move){
-            case 0:
-                System.out.println("An enemy attacks the hero! Watch out!");
-                break;
-            case 1:
-                System.out.println("The hero gets the upper hand and slays the enemy");
-                enemyKilled = true;
-                break;
-        }
-        return enemyKilled;
     }
 
     private void eraseWorld(){
         System.out.print("\033[s"); //save the cursor position
 
-        for (int i = 0; i < WIDTH+3; i++){
+        for (int i = 0; i < HEIGHT +3; i++){
             System.out.print("\033[1A"); //move up 1 lines
             System.out.print("\033[2K"); //erase the entire line
 

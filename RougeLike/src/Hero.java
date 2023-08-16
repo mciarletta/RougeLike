@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 public class Hero extends GameObject {
 
     private final String name;
@@ -33,6 +35,11 @@ public class Hero extends GameObject {
     public void move(int x, int y) {
         this.x += x;
         this.y += y;
+    }
+
+    @Override
+    public boolean fight(ArrayList<String> messages) {
+    return false;
     }
 
 

@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 public class Treasure extends GameObject {
     
     private final int x;
@@ -31,6 +33,11 @@ public class Treasure extends GameObject {
     @Override
     public void move(int x, int y) {
 
+    }
+
+    @Override
+    public boolean fight(ArrayList<String> messages) {
+    return false;
     }
 
 
